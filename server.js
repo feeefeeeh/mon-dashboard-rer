@@ -83,7 +83,7 @@ app.get('/api/horaires', async (req, res) => {
 
                     const trainInfo = {
                         mission: mission,
-                        heure: depart.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}),
+                        heure: depart.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit', timeZone: 'Europe/Paris'}),
                         temps: temps,
                         dest: dest,
                         quai: quai,
