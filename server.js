@@ -2,17 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const https = require('https');
 const app = express();
-const PORT = process.env.PORT || 3000; // Render utilise son propre port
+const PORT = process.env.PORT || 3000; 
 
 const API_KEY = process.env.IDFM_API_KEY; 
-
-// CONFIGURATION
 const ARRET_ID = "STIF:StopArea:SP:43076:"; // Gare Épinay-sur-Orge
-const LIGNE_ID = "STIF:Line::C01727:";       // ID officiel du RER C
+const LIGNE_ID = "STIF:Line::C01727:";       // RER C
 
 app.use(express.static('public'));
 
-// Fonction utilitaire pour faire une requête HTTPS (Promesse)
 function callAPI(url) {
     return new Promise((resolve, reject) => {
         const options = { headers: { 'apiKey': API_KEY, 'Accept': 'application/json' } };
@@ -28,7 +25,6 @@ app.get('/api/horaires', async (req, res) => {
     try {
         console.log("🔄 Mise à jour demandée...");
 
-        // URLs
         const urlHoraires = `https://prim.iledefrance-mobilites.fr/marketplace/stop-monitoring?MonitoringRef=${encodeURIComponent(ARRET_ID)}`;
         const urlTrafic = `https://prim.iledefrance-mobilites.fr/marketplace/general-message?LineRef=${encodeURIComponent(LIGNE_ID)}`;
 
@@ -42,11 +38,12 @@ app.get('/api/horaires', async (req, res) => {
         const responseData = { paris: [], sud: [], messages: [] };
         
         if (delivery.MonitoredStopVisit) {
-            // Liste Mots-Clés ÉLARGIE (Plus robuste)
+            // LISTE COMPLÉTÉE : Ajout de Musée d'Orsay, St-Michel, Alma...
             const destinationsNord = [
                 "Austerlitz", "Invalides", "Versailles", "Quentin", 
                 "Chaville", "Pontoise", "Javel", "Eiffel", "Gott", 
-                "Bibliothèque", "Mitterrand", "Champ de Mars", "Pereire"
+                "Bibliothèque", "Mitterrand", "Champ de Mars", "Pereire",
+                "Musée d'Orsay", "Orsay", "Saint-Michel", "Alma", "Laplace"
             ];
 
             delivery.MonitoredStopVisit.forEach(p => {
@@ -54,13 +51,14 @@ app.get('/api/horaires', async (req, res) => {
                 const dest = train.DestinationName[0].value;
                 const mission = train.JourneyNote ? train.JourneyNote[0].value : "RER";
                 
-                // --- DEBUG : AFFICHER CHAQUE TRAIN DANS LA CONSOLE ---
+                // Récupération Quai
                 let quai = "?";
                 if (train.MonitoredCall.ArrivalPlatformName) {
                     quai = train.MonitoredCall.ArrivalPlatformName.value;
                 }
-                console.log(`🔎 Train détecté : [${mission}] vers "${dest}" sur Quai "${quai}"`);
-                // ----------------------------------------------------
+                
+                // Debug console pour vérifier
+                console.log(`🔎 Train : [${mission}] vers "${dest}" (Quai ${quai})`);
 
                 const now = new Date();
                 const depart = new Date(train.MonitoredCall.ExpectedDepartureTime);
@@ -76,15 +74,11 @@ app.get('/api/horaires', async (req, res) => {
                     proche: diffMinutes < 5
                 };
 
-                // NOUVELLE LOGIQUE DE TRI PLUS SOUPLE
-                // 1. On nettoie le quai (enlève les espaces) et on compare
+                // LOGIQUE DE TRI
                 const quaiEst2 = (quai.trim() === "2");
-                
-                // 2. On cherche si la destination contient un mot clé (insensible à la casse / majuscule)
                 const destUpper = dest.toUpperCase();
                 const vaVersNord = destinationsNord.some(mot => destUpper.includes(mot.toUpperCase()));
 
-                // La condition : Si c'est Quai 2 OU si la destination sonne "Paris"
                 if (quaiEst2 || vaVersNord) {
                     responseData.paris.push(trainInfo);
                 } else {
