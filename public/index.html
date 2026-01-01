@@ -3,119 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RER C Direct</title>
+    <title>Mon RER C</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <style>
         body {
-            background-color: #121212;
+            background-color: #000000;
             color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            margin: 0; padding: 15px;
-            padding-top: env(safe-area-inset-top); /* Pour l'encoche iPhone */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 20px;
+            padding-top: env(safe-area-inset-top);
         }
-        h1 { text-align: center; font-size: 1.1rem; color: #ffcd00; margin: 10px 0 20px 0; text-transform: uppercase; letter-spacing: 2px; }
-        
-        /* BANNIÈRE TRAFIC */
-        #traffic-box {
-            display: none; /* Caché par défaut */
-            background: #e84118;
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            box-shadow: 0 4px 10px rgba(232, 65, 24, 0.3);
-            animation: slideIn 0.5s ease-out;
-        }
-        @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .section-title {
+        /* --- L'HORLOGE --- */
+        .clock-container {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+        #clock {
+            font-size: 3.5rem; /* Très gros pour bien voir */
+            font-weight: 200;  /* Fin et élégant */
+            letter-spacing: 2px;
+            font-variant-numeric: tabular-nums; /* Pour que les chiffres ne sautent pas */
+        }
+        #date {
             color: #888;
-            font-size: 0.8rem;
-            font-weight: bold;
+            font-size: 1rem;
             text-transform: uppercase;
-            margin-top: 25px;
-            margin-bottom: 10px;
-            display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 5px;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        /* --- INFO TRAFIC --- */
+        #traffic-box {
+            display: none; /* Caché si tout va bien */
+            background: #c0392b; /* Rouge RATP/SNCF */
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(192, 57, 43, 0.4);
+            animation: appear 0.5s ease-out;
+        }
+        .traffic-title { font-weight: bold; display: flex; align-items: center; gap: 10px; margin-bottom: 5px;}
+        @keyframes appear { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- LISTE DES TRAINS --- */
+        .section-title {
+            color: #f1c40f; /* Jaune RER C */
+            font-size: 0.9rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
         }
         .train-card {
             display: flex; justify-content: space-between; align-items: center;
             background: #1e1e1e;
             margin-bottom: 12px; padding: 15px;
             border-radius: 12px;
+            transition: transform 0.2s;
         }
+        .train-card:active { transform: scale(0.98); } /* Effet clic */
+        
         .mission-badge {
             background: #333; color: #fff;
-            font-weight: bold; padding: 5px 8px;
-            border-radius: 6px; font-size: 0.85rem;
-            min-width: 40px; text-align: center; margin-right: 12px;
+            font-weight: 700; padding: 6px 10px;
+            border-radius: 8px; font-size: 0.9rem;
+            min-width: 45px; text-align: center; margin-right: 15px;
         }
-        .dest { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
-        .infos { font-size: 0.8rem; color: #aaa; }
-        .temps { font-size: 1.2rem; font-weight: 700; color: #4cd137; }
-        .temps.urgent { color: #fbc531; }
-        .loading { text-align: center; color: #444; margin-top: 20px; font-style: italic; }
+        .dest { font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; color: #ecf0f1; }
+        .infos { font-size: 0.85rem; color: #95a5a6; }
+        .temps { font-size: 1.3rem; font-weight: 700; color: #2ecc71; text-align: right;}
+        .temps.urgent { color: #e67e22; } /* Orange si proche */
+        .temps.kifkif { color: #e74c3c; animation: pulse 1s infinite; } /* Rouge si immédiat */
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .loading { text-align: center; color: #555; margin-top: 30px; font-style: italic; }
     </style>
 </head>
 <body>
 
-    <h1>Gare d'Épinay</h1>
+    <div class="clock-container">
+        <div id="clock">--:--</div>
+        <div id="date">Chargement...</div>
+    </div>
 
     <div id="traffic-box"></div>
 
-    <div class="section-title"><span>🗼 Vers Paris</span><span>Quai 2</span></div>
-    <div id="list-paris"><div class="loading">Chargement...</div></div>
+    <div class="section-title"><span>🗼 Paris / Nord</span><span>Quai 2</span></div>
+    <div id="list-paris"><div class="loading">Recherche des trains...</div></div>
 
-    <div class="section-title"><span>🌳 Vers Province</span><span>Quai 1</span></div>
-    <div id="list-sud"><div class="loading">Chargement...</div></div>
+    <div class="section-title"><span>🌳 Province / Sud</span><span>Quai 1</span></div>
+    <div id="list-sud"><div class="loading">Recherche des trains...</div></div>
 
     <script>
-        async function update() {
+        // --- 1. GESTION DE L'HORLOGE ---
+        function updateClock() {
+            const now = new Date();
+            // Heure (HH:MM:SS)
+            document.getElementById('clock').innerText = now.toLocaleTimeString('fr-FR');
+            // Date (Lundi 12 Janvier)
+            const options = { weekday: 'long', day: 'numeric', month: 'long' };
+            document.getElementById('date').innerText = now.toLocaleDateString('fr-FR', options);
+        }
+        setInterval(updateClock, 1000); // Mise à jour chaque seconde
+        updateClock(); // Appel immédiat
+
+        // --- 2. GESTION DES TRAINS & TRAFIC ---
+        async function updateHoraires() {
             try {
                 const res = await fetch('/api/horaires');
                 const data = await res.json();
 
-                // 1. GESTION TRAFIC
+                // Gestion Trafic
                 const box = document.getElementById('traffic-box');
                 if (data.messages && data.messages.length > 0) {
                     box.style.display = 'block';
-                    // On prend juste le premier message pour ne pas polluer
-                    box.innerHTML = "⚠️ <b>INFO TRAFIC :</b><br>" + data.messages[0]; 
+                    // On affiche le premier message avec une icône d'alerte
+                    box.innerHTML = `<div class="traffic-title">⚠️ INFO TRAFIC</div>` + data.messages[0]; 
                 } else {
                     box.style.display = 'none';
                 }
 
-                // 2. GESTION HORAIRES
+                // Gestion Listes
                 render('list-paris', data.paris);
                 render('list-sud', data.sud);
-            } catch (e) { console.log(e); }
+            } catch (e) { console.error("Erreur connexion", e); }
         }
 
         function render(id, list) {
             const div = document.getElementById(id);
-            if(!list || list.length === 0) {
-                div.innerHTML = '<div style="text-align:center; color:#444; padding:10px">Aucun train affiché</div>';
+            if (!list || list.length === 0) {
+                div.innerHTML = '<div style="text-align:center; color:#444; padding:15px; font-size:0.9rem">Aucun train affiché</div>';
                 return;
             }
-            div.innerHTML = list.map(t => `
+            
+            div.innerHTML = list.map(t => {
+                // Petite logique couleur selon le temps
+                let classeTemps = '';
+                if (t.temps === "À quai") classeTemps = 'kifkif';
+                else if (t.proche) classeTemps = 'urgent';
+
+                return `
                 <div class="train-card">
                     <div style="display:flex; align-items:center;">
                         <div class="mission-badge">${t.mission}</div>
                         <div>
                             <div class="dest">${t.dest}</div>
-                            <div class="infos">Voie ${t.quai} • ${t.heure}</div>
+                            <div class="infos">Voie ${t.quai} • Départe ${t.heure}</div>
                         </div>
                     </div>
-                    <div class="temps ${t.proche ? 'urgent' : ''}">${t.temps}</div>
+                    <div class="temps ${classeTemps}">${t.temps}</div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
-        update();
-        setInterval(update, 30000);
+        // Lancement
+        updateHoraires();
+        setInterval(updateHoraires, 30000); // Refresh auto toutes les 30 sec
     </script>
 </body>
 </html>
