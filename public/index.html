@@ -13,163 +13,175 @@
             background-color: #000000;
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0; padding: 20px;
+            margin: 0; padding: 15px;
             padding-top: env(safe-area-inset-top);
         }
 
-        /* --- L'HORLOGE --- */
-        .clock-container {
-            text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #333;
+        /* --- NAVIGATION (Onglets) --- */
+        .nav-bar {
+            display: flex; gap: 10px; margin-bottom: 20px;
+            overflow-x: auto; padding-bottom: 5px;
         }
-        #clock {
-            font-size: 3.5rem; /* Très gros pour bien voir */
-            font-weight: 200;  /* Fin et élégant */
-            letter-spacing: 2px;
-            font-variant-numeric: tabular-nums; /* Pour que les chiffres ne sautent pas */
+        .nav-btn {
+            background: #333; color: #888; border: none;
+            padding: 10px 15px; border-radius: 20px;
+            font-weight: bold; font-size: 0.9rem; white-space: nowrap;
+            transition: 0.3s; cursor: pointer;
         }
-        #date {
-            color: #888;
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }
+        .nav-btn.active { background: #f1c40f; color: #000; transform: scale(1.05); }
+
+        /* --- HORLOGE --- */
+        .header-info { text-align: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        #clock { font-size: 2.5rem; font-weight: 200; letter-spacing: 2px; }
+        #station-title { color: #f1c40f; text-transform: uppercase; font-weight: 800; margin-top: 5px; letter-spacing: 1px; }
 
         /* --- INFO TRAFIC --- */
         #traffic-box {
-            display: none; /* Caché si tout va bien */
-            background: #c0392b; /* Rouge RATP/SNCF */
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(192, 57, 43, 0.4);
+            display: none; background: #c0392b; color: white;
+            padding: 15px; border-radius: 12px; margin-bottom: 25px;
             animation: appear 0.5s ease-out;
         }
-        .traffic-title { font-weight: bold; display: flex; align-items: center; gap: 10px; margin-bottom: 5px;}
         @keyframes appear { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- LISTE DES TRAINS --- */
+        /* --- LISTE --- */
         .section-title {
-            color: #f1c40f; /* Jaune RER C */
-            font-size: 0.9rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 10px;
-            margin-bottom: 15px;
-            display: flex; justify-content: space-between; align-items: flex-end;
-            border-bottom: 2px solid #333;
-            padding-bottom: 5px;
+            color: #888; font-size: 0.8rem; font-weight: bold; text-transform: uppercase;
+            margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px;
         }
         .train-card {
             display: flex; justify-content: space-between; align-items: center;
-            background: #1e1e1e;
-            margin-bottom: 12px; padding: 15px;
-            border-radius: 12px;
-            transition: transform 0.2s;
+            background: #1e1e1e; margin-bottom: 10px; padding: 15px; border-radius: 12px;
         }
-        .train-card:active { transform: scale(0.98); } /* Effet clic */
-        
         .mission-badge {
-            background: #333; color: #fff;
-            font-weight: 700; padding: 6px 10px;
-            border-radius: 8px; font-size: 0.9rem;
-            min-width: 45px; text-align: center; margin-right: 15px;
+            background: #333; color: #fff; font-weight: 700; padding: 6px 10px;
+            border-radius: 8px; font-size: 0.9rem; min-width: 45px; text-align: center; margin-right: 12px;
         }
-        .dest { font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; color: #ecf0f1; }
-        .infos { font-size: 0.85rem; color: #95a5a6; }
-        .temps { font-size: 1.3rem; font-weight: 700; color: #2ecc71; text-align: right;}
-        .temps.urgent { color: #e67e22; } /* Orange si proche */
-        .temps.kifkif { color: #e74c3c; animation: pulse 1s infinite; } /* Rouge si immédiat */
-
+        .dest { font-weight: 600; font-size: 1rem; color: #ecf0f1; }
+        .infos { font-size: 0.8rem; color: #95a5a6; }
+        .temps { font-size: 1.2rem; font-weight: 700; color: #2ecc71; }
+        .temps.urgent { color: #e67e22; }
+        .temps.kifkif { color: #e74c3c; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .loading { text-align: center; color: #555; margin-top: 30px; font-style: italic; }
+        
+        /* Cacher les sections vides proprement */
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="clock-container">
+    <div class="nav-bar">
+        <button class="nav-btn active" onclick="switchStation('epinay', this)">Épinay</button>
+        <button class="nav-btn" onclick="switchStation('savigny', this)">Savigny</button>
+        <button class="nav-btn" onclick="switchStation('bfm', this)">Biblio F.M</button>
+    </div>
+
+    <div class="header-info">
         <div id="clock">--:--</div>
-        <div id="date">Chargement...</div>
+        <div id="station-title">Épinay-sur-Orge</div>
     </div>
 
     <div id="traffic-box"></div>
 
-    <div class="section-title"><span>🗼 Paris / Nord</span><span>Quai 2</span></div>
-    <div id="list-paris"><div class="loading">Recherche des trains...</div></div>
+    <div id="container-paris">
+        <div class="section-title">🗼 Vers Paris / Nord</div>
+        <div id="list-paris"></div>
+    </div>
 
-    <div class="section-title"><span>🌳 Province / Sud</span><span>Quai 1</span></div>
-    <div id="list-sud"><div class="loading">Recherche des trains...</div></div>
+    <div id="container-sud">
+        <div class="section-title">🌳 Vers Province / Sud</div>
+        <div id="list-sud"></div>
+    </div>
 
     <script>
-        // --- 1. GESTION DE L'HORLOGE ---
+        let currentStation = 'epinay'; // Gare par défaut
+
+        // --- 1. CHANGEMENT DE GARE ---
+        function switchStation(stationId, btnElement) {
+            currentStation = stationId;
+            
+            // Gestion boutons
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            // Mise à jour Titre
+            const titres = {
+                'epinay': "Épinay-sur-Orge",
+                'savigny': "Savigny-sur-Orge",
+                'bfm': "Biblio F. Mitterrand"
+            };
+            document.getElementById('station-title').innerText = titres[stationId];
+
+            // On efface les listes pour effet de chargement
+            document.getElementById('list-paris').innerHTML = '<div style="text-align:center;color:#555;font-style:italic">Chargement...</div>';
+            document.getElementById('list-sud').innerHTML = '<div style="text-align:center;color:#555;font-style:italic">Chargement...</div>';
+
+            updateHoraires();
+        }
+
+        // --- 2. HORLOGE ---
         function updateClock() {
             const now = new Date();
-            // Heure (HH:MM:SS)
-            document.getElementById('clock').innerText = now.toLocaleTimeString('fr-FR');
-            // Date (Lundi 12 Janvier)
-            const options = { weekday: 'long', day: 'numeric', month: 'long' };
-            document.getElementById('date').innerText = now.toLocaleDateString('fr-FR', options);
+            document.getElementById('clock').innerText = now.toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute:'2-digit' });
         }
-        setInterval(updateClock, 1000); // Mise à jour chaque seconde
-        updateClock(); // Appel immédiat
+        setInterval(updateClock, 1000);
+        updateClock();
 
-        // --- 2. GESTION DES TRAINS & TRAFIC ---
+        // --- 3. RÉCUPÉRATION DONNÉES ---
         async function updateHoraires() {
             try {
-                const res = await fetch('/api/horaires');
+                // On appelle l'API avec le paramètre ?station=...
+                const res = await fetch(`/api/horaires?station=${currentStation}`);
                 const data = await res.json();
 
                 // Gestion Trafic
                 const box = document.getElementById('traffic-box');
                 if (data.messages && data.messages.length > 0) {
                     box.style.display = 'block';
-                    // On affiche le premier message avec une icône d'alerte
-                    box.innerHTML = `<div class="traffic-title">⚠️ INFO TRAFIC</div>` + data.messages[0]; 
+                    box.innerHTML = `⚠️ <b>INFO :</b> ${data.messages[0]}`; 
                 } else {
                     box.style.display = 'none';
                 }
 
-                // Gestion Listes
-                render('list-paris', data.paris);
-                render('list-sud', data.sud);
-            } catch (e) { console.error("Erreur connexion", e); }
+                // GESTION INTELLIGENTE DE L'AFFICHAGE
+                // Si la liste est vide (ex: Sud pour Epinay), on cache tout le bloc
+                toggleSection('container-paris', 'list-paris', data.paris);
+                toggleSection('container-sud', 'list-sud', data.sud);
+
+            } catch (e) { console.error(e); }
         }
 
-        function render(id, list) {
-            const div = document.getElementById(id);
-            if (!list || list.length === 0) {
-                div.innerHTML = '<div style="text-align:center; color:#444; padding:15px; font-size:0.9rem">Aucun train affiché</div>';
-                return;
-            }
-            
-            div.innerHTML = list.map(t => {
-                // Petite logique couleur selon le temps
-                let classeTemps = '';
-                if (t.temps === "À quai") classeTemps = 'kifkif';
-                else if (t.proche) classeTemps = 'urgent';
+        function toggleSection(containerId, listId, dataList) {
+            const container = document.getElementById(containerId);
+            const listDiv = document.getElementById(listId);
 
-                return `
-                <div class="train-card">
-                    <div style="display:flex; align-items:center;">
-                        <div class="mission-badge">${t.mission}</div>
-                        <div>
-                            <div class="dest">${t.dest}</div>
-                            <div class="infos">Voie ${t.quai} • Départ ${t.heure}</div>
+            if (!dataList || dataList.length === 0) {
+                // Si vide, on cache carrément la section pour gagner de la place
+                container.classList.add('hidden'); 
+            } else {
+                container.classList.remove('hidden');
+                listDiv.innerHTML = dataList.map(t => {
+                    let classeTemps = '';
+                    if (t.temps === "À quai") classeTemps = 'kifkif';
+                    else if (t.proche) classeTemps = 'urgent';
+
+                    return `
+                    <div class="train-card">
+                        <div style="display:flex; align-items:center;">
+                            <div class="mission-badge">${t.mission}</div>
+                            <div>
+                                <div class="dest">${t.dest}</div>
+                                <div class="infos">Voie ${t.quai} • ${t.heure}</div>
+                            </div>
                         </div>
+                        <div class="temps ${classeTemps}">${t.temps}</div>
                     </div>
-                    <div class="temps ${classeTemps}">${t.temps}</div>
-                </div>
-            `}).join('');
+                `}).join('');
+            }
         }
 
-        // Lancement
+        // Lancement initial
         updateHoraires();
-        setInterval(updateHoraires, 30000); // Refresh auto toutes les 30 sec
+        setInterval(updateHoraires, 30000);
     </script>
 </body>
 </html>

@@ -5,12 +5,18 @@ const app = express();
 const PORT = process.env.PORT || 3000; 
 
 const API_KEY = process.env.IDFM_API_KEY; 
-const ARRET_ID = "STIF:StopArea:SP:43076:"; // Gare Épinay-sur-Orge
-const LIGNE_ID = "STIF:Line::C01727:";       // RER C
+
+// 1. Dictionnaire des Gares
+const STATIONS = {
+    "epinay":  "STIF:StopArea:SP:43076:",
+    "savigny": "STIF:StopArea:SP:43192:",
+    "bfm":     "STIF:StopArea:SP:45301:"
+};
+
+const LIGNE_ID = "STIF:Line::C01727:"; // RER C
 
 app.use(express.static('public'));
 
-// Fonction pour faire des appels API proprement
 function callAPI(url) {
     return new Promise((resolve, reject) => {
         const options = { headers: { 'apiKey': API_KEY, 'Accept': 'application/json' } };
@@ -18,11 +24,7 @@ function callAPI(url) {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
-                try {
-                    resolve(JSON.parse(data));
-                } catch (e) {
-                    resolve({}); // En cas d'erreur JSON, on renvoie un objet vide pour ne pas planter
-                }
+                try { resolve(JSON.parse(data)); } catch (e) { resolve({}); }
             });
         }).on('error', err => reject(err));
     });
@@ -30,8 +32,12 @@ function callAPI(url) {
 
 app.get('/api/horaires', async (req, res) => {
     try {
-        // On lance les 2 appels en parallèle (Horaires + Trafic)
-        const urlHoraires = `https://prim.iledefrance-mobilites.fr/marketplace/stop-monitoring?MonitoringRef=${encodeURIComponent(ARRET_ID)}`;
+        // On récupère la gare demandée (par défaut epinay)
+        const stationKey = req.query.station || "epinay";
+        const arretId = STATIONS[stationKey];
+
+        // URLs
+        const urlHoraires = `https://prim.iledefrance-mobilites.fr/marketplace/stop-monitoring?MonitoringRef=${encodeURIComponent(arretId)}`;
         const urlTrafic = `https://prim.iledefrance-mobilites.fr/marketplace/general-message?LineRef=${encodeURIComponent(LIGNE_ID)}`;
 
         const [dataHoraires, dataTrafic] = await Promise.all([
@@ -41,24 +47,21 @@ app.get('/api/horaires', async (req, res) => {
 
         const responseData = { paris: [], sud: [], messages: [] };
 
-        // 1. TRAITEMENT DU TRAFIC (Prioritaire)
+        // 1. TRAFIC
         if (dataTrafic.Siri && dataTrafic.Siri.ServiceDelivery.GeneralMessageDelivery) {
             const delivery = dataTrafic.Siri.ServiceDelivery.GeneralMessageDelivery[0];
             if (delivery.InfoMessage) {
                 delivery.InfoMessage.forEach(msg => {
-                    // On récupère le texte du message d'incident
-                    const texte = msg.Content.Message[0].MessageText.value;
-                    responseData.messages.push(texte);
+                    responseData.messages.push(msg.Content.Message[0].MessageText.value);
                 });
             }
         }
 
-        // 2. TRAITEMENT DES HORAIRES
+        // 2. HORAIRES
         if (dataHoraires.Siri) {
             const delivery = dataHoraires.Siri.ServiceDelivery.StopMonitoringDelivery[0];
             
             if (delivery.MonitoredStopVisit) {
-                // Votre liste complète de destinations NORD
                 const destinationsNord = [
                     "Austerlitz", "Invalides", "Versailles", "Quentin", 
                     "Chaville", "Pontoise", "Javel", "Eiffel", "Gott", 
@@ -71,10 +74,7 @@ app.get('/api/horaires', async (req, res) => {
                     const dest = train.DestinationName[0].value;
                     const mission = train.JourneyNote ? train.JourneyNote[0].value : "RER";
                     
-                    let quai = "?";
-                    if (train.MonitoredCall.ArrivalPlatformName) {
-                        quai = train.MonitoredCall.ArrivalPlatformName.value;
-                    }
+                    let quai = train.MonitoredCall.ArrivalPlatformName ? train.MonitoredCall.ArrivalPlatformName.value : "?";
                     
                     const now = new Date();
                     const depart = new Date(train.MonitoredCall.ExpectedDepartureTime);
@@ -90,8 +90,7 @@ app.get('/api/horaires', async (req, res) => {
                         proche: diffMinutes < 5
                     };
 
-                    // Votre logique de tri "Blindée"
-                    const quaiEst2 = (quai.trim() === "2");
+                    const quaiEst2 = (quai.trim() === "2" || quai.trim() === "4"); // Savigny a parfois quai 4
                     const destUpper = dest.toUpperCase();
                     const vaVersNord = destinationsNord.some(mot => destUpper.includes(mot.toUpperCase()));
 
@@ -104,10 +103,28 @@ app.get('/api/horaires', async (req, res) => {
             }
         }
 
+        // --- FILTRAGE FINAL SELON VOTRE DEMANDE ---
+        
+        if (stationKey === 'epinay') {
+            // Pour Epinay : On supprime totalement la liste SUD
+            responseData.sud = [];
+        } 
+        else if (stationKey === 'bfm') {
+            // Pour BFM : On supprime totalement la liste PARIS (car on veut rentrer)
+            responseData.paris = [];
+            const missionOmbibus = ["ELBA","DEBA","PAUL","BALI","DEBO","BOBA"];
+            responseData.sud = responseData.sud.filter(train => {
+                return missionOmbibus.includes(train.mission);
+            });
+        }
+        
+        responseData.paris = responseData.paris.slice(0,5);
+        responseData.sud = responseData.sud.slice(0,5);
+
         res.json(responseData);
 
     } catch (e) {
-        console.error("Erreur serveur:", e);
+        console.error(e);
         res.status(500).json({ error: "Erreur technique" });
     }
 });
