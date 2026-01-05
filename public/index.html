@@ -73,6 +73,7 @@
         <button class="nav-btn active" onclick="switchStation('epinay', this)">Épinay</button>
         <button class="nav-btn" onclick="switchStation('savigny', this)">Savigny</button>
         <button class="nav-btn" onclick="switchStation('bfm', this)">Biblio F.M</button>
+        <button class="nav-btn" onclick="switchStation('Issy-VdS', this)">Issy V.S</button>
     </div>
 
     <div class="header-info">
@@ -107,7 +108,8 @@
             const titres = {
                 'epinay': "Épinay-sur-Orge",
                 'savigny': "Savigny-sur-Orge",
-                'bfm': "Biblio F. Mitterrand"
+                'bfm': "Biblio F. Mitterrand",
+                'Issy-VdS': "Issy Val de Seine"
             };
             document.getElementById('station-title').innerText = titres[stationId];
 

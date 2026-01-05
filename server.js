@@ -10,7 +10,8 @@ const API_KEY = process.env.IDFM_API_KEY;
 const STATIONS = {
     "epinay":  "STIF:StopArea:SP:43076:",
     "savigny": "STIF:StopArea:SP:43192:",
-    "bfm":     "STIF:StopArea:SP:45301:"
+    "bfm":     "STIF:StopArea:SP:45301:",
+    "Issy-VdS": "STIF:StopArea:SP:462357:"
 };
 
 const LIGNE_ID = "STIF:Line::C01727:"; // RER C
@@ -116,6 +117,10 @@ app.get('/api/horaires', async (req, res) => {
             responseData.sud = responseData.sud.filter(train => {
                 return missionOmbibus.includes(train.mission);
             });
+        }
+        else if (stationKey == 'Issy-VdS'){
+            responseData.paris = [];
+         
         }
         
         responseData.paris = responseData.paris.slice(0,5);
